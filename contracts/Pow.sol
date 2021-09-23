@@ -4,19 +4,23 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "hardhat/console.sol";
 
+// Proof of work NFT
+// Each NFT is associated with a specific hash, at every difficulty level there are some number that are expected to
+//  be found. Mining is somewhat similar to bitcoin mining and is done via hashing. In this case keccak256
 contract Pow is ERC721 {
+    // how many blocks before the target block hash changes
+    uint private window = 5;
 
-    uint private lookBack = 5;
-
-    // at 4 it removes an F from the front of this huge number
-    uint private difficultyIncrement = 4;
+    // how many powers of 2 to increase the difficulty by
+    uint private difficultyIncrement = 1;
 
     // ease is the opposite of difficulty, the higher this number is, the easier the proof of work is
     uint private ease = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     // if this is set to 2 then there is a 50% chance of a difficulty adjustment on that mint
-    uint inverseDifficultyAdjustmentFrequency = 10;
+    uint private inverseDifficultyAdjustmentFrequency = 10;
 
+    // block hash prepended to the data that is to be hashed prevents use of rainbow tables and hash precomputation
     uint private targetBlockHash;
 
     constructor() ERC721("Pow", "POW") {
@@ -27,6 +31,8 @@ contract Pow is ERC721 {
         }
     }
 
+    // create a new Pow NFT
+    // NOTICE the nonce is not your token id, the hash is
     function mint(address to, uint nonce) public {
         uint hash = getCurrentHash(to, nonce);
         // console.log("mint hash=", hash, "ease=", ease);
@@ -37,14 +43,17 @@ contract Pow is ERC721 {
         _mint(to, hash);
     }
 
+    // for convenience, check a given nonce to determine if it could be used to mint
     function checkNonce(address to, uint nonce) view public returns (bool) {
         uint hash = getCurrentHash(to, nonce);
         return hash < ease;
     }
 
+    // update the target black hash
+    // this moves the target block hash to prevent any precomputed hashes from being used
     function updateTargetBlockHash() internal {
-        if(block.number % lookBack == 0) {
-            targetBlockHash = uint(blockhash(block.number - lookBack));
+        if(block.number % window == 0) {
+            targetBlockHash = uint(blockhash(block.number - window));
             console.log("updating target block hash ", targetBlockHash);
         }
     }
@@ -76,6 +85,6 @@ contract Pow is ERC721 {
     }
 
     function getLookBack() view public returns (uint) {
-        return lookBack;
+        return window;
     }
 }
