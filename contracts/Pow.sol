@@ -20,42 +20,22 @@ contract Pow is ERC721 {
     // if this is set to 2 then there is a 50% chance of a difficulty adjustment on that mint
     uint private inverseDifficultyAdjustmentFrequency = 10;
 
-    // block hash prepended to the data that is to be hashed prevents use of rainbow tables and hash precomputation
-    uint private targetBlockHash;
-
     constructor() ERC721("Pow", "POW") {
-        if(block.number == 0) {
-            targetBlockHash = 0;
-        } else {
-            targetBlockHash = uint(blockhash(block.number - 1));
-        }
     }
 
     // create a new Pow NFT
     // NOTICE the nonce is not your token id, the hash is
     function mint(address to, uint nonce) public {
-        uint hash = getCurrentHash(to, nonce);
-        // console.log("mint hash=", hash, "ease=", ease);
+        uint hash = getHash(to, nonce);
         require(hash < ease, "pow check failed");
         adjustDifficulty(hash);
-        updateTargetBlockHash();
 
         _mint(to, hash);
     }
 
     // for convenience, check a given nonce to determine if it could be used to mint
     function checkNonce(address to, uint nonce) view public returns (bool) {
-        uint hash = getCurrentHash(to, nonce);
-        return hash < ease;
-    }
-
-    // update the target black hash
-    // this moves the target block hash to prevent any precomputed hashes from being used
-    function updateTargetBlockHash() internal {
-        if(block.number % window == 0) {
-            targetBlockHash = uint(blockhash(block.number - window));
-            console.log("updating target block hash ", targetBlockHash);
-        }
+        return getHash(to, nonce) < ease;
     }
 
     // There are less tokens available at an easier difficulty
@@ -68,12 +48,8 @@ contract Pow is ERC721 {
         }
     }
 
-    function getHash(address to, uint blockHash, uint nonce) pure public returns (uint) {
-        return uint(keccak256(abi.encodePacked(to, blockHash, nonce)));
-    }
-
-    function getCurrentHash(address to, uint nonce) view public returns (uint) {
-        return getHash(to, targetBlockHash, nonce);
+    function getHash(address to, uint nonce) pure public returns (uint) {
+        return uint(keccak256(abi.encodePacked(to, nonce)));
     }
 
     function getEase() view public returns (uint) {
@@ -84,7 +60,7 @@ contract Pow is ERC721 {
         return difficultyIncrement;
     }
 
-    function getLookBack() view public returns (uint) {
+    function getWindow() view public returns (uint) {
         return window;
     }
 }
