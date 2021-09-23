@@ -8,9 +8,6 @@ import "hardhat/console.sol";
 // Each NFT is associated with a specific hash, at every difficulty level there are some number that are expected to
 //  be found. Mining is somewhat similar to bitcoin mining and is done via hashing. In this case keccak256
 contract Pow is ERC721 {
-    // how many blocks before the target block hash changes
-    uint private window = 5;
-
     // how many powers of 2 to increase the difficulty by
     uint private difficultyIncrement = 1;
 
@@ -58,9 +55,5 @@ contract Pow is ERC721 {
 
     function getDifficultyIncrement() view public returns (uint) {
         return difficultyIncrement;
-    }
-
-    function getWindow() view public returns (uint) {
-        return window;
     }
 }
